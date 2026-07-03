@@ -1,0 +1,51 @@
+version: '3.8'
+
+services:
+  # Database for core backend
+  postgres:
+    image: postgres:15-alpine
+    container_name: financial_coach_postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-admin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-admin_password}
+      POSTGRES_DB: ${POSTGRES_DB:-financial_coach_db}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-admin} -d ${POSTGRES_DB:-financial_coach_db}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # Redis for caching, background jobs, and websockets
+  redis:
+    image: redis:7-alpine
+    container_name: financial_coach_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+
+  # ChromaDB for Vector Search / RAG
+  chromadb:
+    image: chromadb/chroma:latest
+    container_name: financial_coach_chroma
+    ports:
+      - "8000:8000"
+    volumes:
+      - chroma_data:/chroma/chroma
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  redis_data:
+  chroma_data:
